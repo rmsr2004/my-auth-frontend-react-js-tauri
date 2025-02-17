@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import QrCodeDecoder from 'qrcode-decoder';
 
-const ImportPage = () => {
+const Import = () => {
     const [status, setStatus] = useState("Please upload a QR code");
     const decoder = new QrCodeDecoder();
 
@@ -45,4 +45,4 @@ const ImportPage = () => {
     );
 };
 
-export default ImportPage;
+export default Import;
