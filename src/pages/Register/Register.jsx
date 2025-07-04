@@ -2,7 +2,10 @@ import './Register.css';
 
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from 'react';
-import { useNavigate} from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
+import { UserOutlined, EyeInvisibleOutlined, EyeTwoTone, KeyOutlined } from '@ant-design/icons';
+import { Button, Input, Space, Flex } from 'antd';
 
 import { login, register, add_device } from '../../services/services';
 
@@ -21,39 +24,58 @@ const Register = () => {
             const hostName = await invoke('get_host_name');
             const token = await login(username, password);
             localStorage.setItem('token', token);
-            await add_device(hostName);
+            await add_device("2");
             localStorage.removeItem('token');
 
-            navigate('/login');
+            navigate('/');
         } catch (error) {
             setError(error.message);
         }
     };
 
     return (
-        <div className="register">
-            <h1>Register</h1>
+        <div className='body'>
+            <div className="container">
+                <div className="img-box">
+                    <img src='../../../src-tauri/icons/auth2.png' alt="Logo" className="logo" />
+                </div>
+                <div className='separator'></div>
+                <div className="register-box">
+                    <h1>Register</h1>
 
-            <form className='register-page-form' onSubmit={handleRegister}>
-                <input
-                    type="text"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    vakue={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
+                    <form onSubmit={handleRegister}>
+                        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                            <Input
+                                size="large"
+                                placeholder="username"
+                                prefix={<UserOutlined />}
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                            />
 
-                {error && <p className='error'>{error}</p>}
+                            <Input.Password
+                                placeholder="password"
+                                prefix={<KeyOutlined />}
+                                iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                size="large"
+                            />
 
-                <button className='register-button' type="submit">Register</button>
-            </form>
+                            {error && <p className='error'>{error}</p>}
+
+                            <Flex gap="small" wrap align='center' justify='center' size="large">
+                                <Button block htmlType='submit'>Register</Button>
+                            </Flex>
+                        </Space>
+                    </form>
+                    <Link to="/">
+                        <p className="login-link">
+                            Already have an account?
+                        </p>
+                    </Link>
+                </div>
+            </div>
         </div>
     )
 }

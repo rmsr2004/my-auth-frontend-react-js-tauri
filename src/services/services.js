@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:8080/auth';
+const API_URL = 'http://127.0.0.1:8080/auth/v1';
 
 export const register = async (username, password) => {
     console.log(`[REGISTER] username: ${username}, password: ${password}`);
@@ -87,6 +87,28 @@ export const get_apps = async () => {
     return response.results;
 }
 
+export const delete_app = async (issuer) => {
+    console.log(`[DELETE_APP] issuer: ${issuer}`);
+    
+    const request = await fetch(`${API_URL}/delete_app`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ issuer }),
+    });
+
+    const response = await request.json();
+    console.log(`[DELETE_APP] response: ${JSON.stringify(response)}`);
+    
+    if (response.status != '200') {
+        throw new Error(response.errors);
+    }
+
+    return response.results;
+}
+
 export const add_device = async (device) => {
     console.log(`[ADD_DEVICE] device: ${device}`);
     
@@ -121,6 +143,27 @@ export const verify_device = async (device) => {
 
     const response = await request.json();
     console.log(`[GET_DEVICES] response: ${JSON.stringify(response)}`);
+    
+    if (response.status != '200') {
+        throw new Error(response.errors);
+    }
+
+    return response.results;
+}
+
+export const generate_tokens = async (device_id) => {
+    console.log(`[GENERATE_TOKENS] device_id: ${device_id}`);
+    
+    const request = await fetch(`${API_URL}/generate_tokens/${device_id}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+    });
+
+    const response = await request.json();
+    console.log(`[GENERATE_TOKENS] response: ${JSON.stringify(response)}`);
     
     if (response.status != '200') {
         throw new Error(response.errors);

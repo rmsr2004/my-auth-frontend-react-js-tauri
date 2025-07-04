@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autenticação de 2 Fatores</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        
+        .code-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background-color: #3b82f6;
+            animation: countdown 30s linear infinite;
+        }
+        
+        @keyframes countdown {
+            0% {
+                width: 100%;
+            }
+            100% {
+                width: 0%;
+            }
+        }
+        
+        .app-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen p-4 md:p-8">
+        <div class="max-w-3xl mx-auto">
+            <header class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">Autenticação de 2 Fatores</h1>
+                <p class="text-gray-600 mt-2">Gerencie suas aplicações e códigos de segurança</p>
+            </header>
+            
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-700">Suas Aplicações</h2>
+                <button id="addAppBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Adicionar Aplicação
+                </button>
+            </div>
+            
+            <div id="appsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- App cards will be generated here -->
+            </div>
+            
+            <!-- Modal for adding new app -->
+            <div id="addAppModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-800">Adicionar Nova Aplicação</h3>
+                        <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="addAppForm">
+                        <div class="mb-4">
+                            <label for="appName" class="block text-gray-700 mb-2">Nome da Aplicação</label>
+                            <input type="text" id="appName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="secretKey" class="block text-gray-700 mb-2">Chave Secreta</label>
+                            <input type="text" id="secretKey" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: JBSWY3DPEHPK3PXP" required>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="button" id="cancelBtn" class="px-4 py-2 text-gray-600 mr-2">Cancelar</button>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Adicionar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for demonstration
+        let apps = [
+            { id: 1, name: "Google", secret: "JBSWY3DPEHPK3PXP", code: "123456", timeLeft: 30 },
+            { id: 2, name: "Microsoft", secret: "HXDMVJECJJWSRB3H", code: "789012", timeLeft: 30 },
+            { id: 3, name: "Dropbox", secret: "GEZDGNBVGY3TQOJQ", code: "345678", timeLeft: 30 }
+        ];
+        
+        // Generate random 6-digit code
+        function generateCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+        
+        // Render all apps
+        function renderApps() {
+            const appsList = document.getElementById('appsList');
+            appsList.innerHTML = '';
+            
+            apps.forEach(app => {
+                const appCard = document.createElement('div');
+                appCard.className = 'app-card bg-white rounded-lg p-4 shadow-md transition-all duration-200';
+                appCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-semibold text-lg text-gray-800">${app.name}</h3>
+                        </div>
+                        <button class="delete-app text-gray-400 hover:text-red-500" data-id="${app.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="code-container mt-3 bg-gray-100 p-3 rounded-md">
+                        <div class="flex justify-center">
+                            <span class="text-2xl font-mono font-bold tracking-wider">${app.code}</span>
+                        </div>
+                        <div class="progress-bar" style="animation-duration: ${app.timeLeft}s"></div>
+                    </div>
+                `;
+                appsList.appendChild(appCard);
+            });
+            
+            // Add event listeners for delete buttons
+            document.querySelectorAll('.delete-app').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.getAttribute('data-id'));
+                    apps = apps.filter(app => app.id !== id);
+                    renderApps();
+                });
+            });
+        }
+        
+        // Update codes every 30 seconds
+        function updateCodes() {
+            apps = apps.map(app => ({
+                ...app,
+                code: generateCode(),
+                timeLeft: 30
+            }));
+            renderApps();
+        }
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            renderApps();
+            
+            // Set up timer for code refresh
+            setInterval(updateCodes, 30000);
+            
+            // Modal functionality
+            const addAppBtn = document.getElementById('addAppBtn');
+            const addAppModal = document.getElementById('addAppModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const addAppForm = document.getElementById('addAppForm');
+            
+            addAppBtn.addEventListener('click', () => {
+                addAppModal.classList.remove('hidden');
+            });
+            
+            closeModalBtn.addEventListener('click', () => {
+                addAppModal.classList.add('hidden');
+            });
+            
+            cancelBtn.addEventListener('click', () => {
+                addAppModal.classList.add('hidden');
+            });
+            
+            addAppForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const appName = document.getElementById('appName').value;
+                const secretKey = document.getElementById('secretKey').value;
+                
+                // Add new app
+                const newApp = {
+                    id: Date.now(),
+                    name: appName,
+                    secret: secretKey,
+                    code: generateCode(),
+                    timeLeft: 30
+                };
+                
+                apps.push(newApp);
+                renderApps();
+                
+                // Reset form and close modal
+                addAppForm.reset();
+                addAppModal.classList.add('hidden');
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9433c5c017955bdc',t:'MTc0NzgyNzM0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
